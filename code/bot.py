@@ -9,7 +9,7 @@ class Bot(object):
         self.game_settings = {}
         self.game_settings['game'] = {}
         self.game_settings['player1'] = {}
-        self.game_settings['player2'] = {}        
+        self.game_settings['player2'] = {}
 
 
     def run(self):

@@ -298,17 +298,3 @@ action moves 10000
 Output from your bot: "left,right,right,left,drop"
 
 Round 12
-
-About
-Roadmap
-FAQ
-Connect
-Facebook
-Twitter
-Google Plus
-Email
-Legal
-Site rules
-Terms of Service
-Privacy Policy
-©2015 Star Apple B.V.
