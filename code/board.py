@@ -1,6 +1,6 @@
 
 from piece import Piece, PIECES, NUM_ROTATIONS
-from search import BoardSearchProblem, aStarSearch, boardHeuristic, depthFirstSearch
+from search import BoardSearchProblem, aStarSearch, boardHeuristic
 from copy import copy, deepcopy
 import time
 
@@ -106,9 +106,9 @@ class Board(object):
         piece_type = start_piece._type
         start_rot = start_piece.right_rotations
         end_rot = end_piece.right_rotations
+
         problem = BoardSearchProblem(self, piece_type, end_rot, end_loc, start_rot, start_loc)
         backwards_path = aStarSearch(problem, boardHeuristic)
-
         if backwards_path == 'Error':
             return []
 

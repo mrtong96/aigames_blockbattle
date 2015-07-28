@@ -81,11 +81,13 @@ class Bot(object):
             feature_vectors.append((pos, b.get_feature_vector()))
             b.remove_piece(*pos)
 
+        print b
         feature_vectors.sort(key=lambda x: - util.multiply_feature_vectors(x[1], WEIGHT_VECTOR))
 
         path = []
 
         for pos in feature_vectors:
+
             best_valid_pos = pos[0]
 
             end_piece = best_valid_pos[0]
