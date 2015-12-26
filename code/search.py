@@ -1,7 +1,7 @@
 
+from util import PriorityQueue
 import util
 from piece import Piece
-import Queue
 
 # treis to get piece from start to end position
 
@@ -23,7 +23,7 @@ class BoardSearchProblem():
     def getSuccessors(self, cur_state):
         cur_piece_type, cur_rotations, cur_loc = cur_state
         cur_piece = Piece(cur_piece_type, right_rotations=cur_rotations)
-        possible_actions = ['left', 'right', 'turnleft', 'turnright', 'up']
+        possible_actions = ['up', 'left', 'right', 'turnleft', 'turnright']
 
         state_action_pairs = []
 
@@ -97,26 +97,56 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
+
     closed = set([problem.getStartState()])
-    fringe = Queue.PriorityQueue()
+    fringe = util.PriorityQueue()
 
     for successor in problem.getSuccessors(problem.getStartState()):
-        fringe.put((problem.getCostOfActions([successor[1]])\
-            + heuristic(successor[0], problem), ([successor[1]], successor[0])))
+        fringe.push(([successor[1]], successor[0]), problem.getCostOfActions([successor[1]])\
+            + heuristic(successor[0], problem))
 
     while True:
-
-        if fringe.empty():
+        if fringe.isEmpty():
             return 'Error'
-        currentPath, currentState = fringe.get()[1]
+        currentPath, currentState = fringe.pop()
         if problem.isGoalState(currentState):
             return currentPath
         if currentState not in closed:
-            print len(closed)
-            print currentState
             closed.add(currentState)
             for successorState in problem.getSuccessors(currentState):
                 newPath = currentPath + [successorState[1]]
-                fringe.put((problem.getCostOfActions(newPath)\
-                    + heuristic(successorState[0], problem), (newPath, successorState[0])))
+                fringe.push((newPath, successorState[0]), problem.getCostOfActions(newPath)\
+                    + heuristic(successorState[0], problem))
 
+def depthFirstSearch(problem):
+    """
+    Search the deepest nodes in the search tree first.
+
+    Your search algorithm needs to return a list of actions that reaches the
+    goal. Make sure to implement a graph search algorithm.
+
+    To get started, you might want to try some of these simple commands to
+    understand the search problem that is being passed in:
+
+    print "Start:", problem.getStartState()
+    print "Is the start a goal?", problem.isGoalState(problem.getStartState())
+    print "Start's successors:", problem.getSuccessors(problem.getStartState())
+    """
+    closed = set([problem.getStartState()])
+    fringe = util.Stack()
+    for successor in problem.getSuccessors(problem.getStartState()):
+        fringe.push(([successor[1]], successor[0]))
+
+    while True:
+        if fringe.isEmpty():
+            return 'Error'
+        currentPath, currentState = fringe.pop()
+        if problem.isGoalState(currentState):
+            return currentPath
+        if currentState not in closed:
+            closed.add(currentState)
+            for successorState in problem.getSuccessors(currentState):
+                newPath = currentPath + [successorState[1]]
+                fringe.push((newPath, successorState[0]))
+                if problem.isGoalState(currentState):
+                    return newPath

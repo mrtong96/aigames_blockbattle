@@ -23,32 +23,46 @@ class Piece(object):
 
     def __init__(self, _type, right_rotations=0, left_rotations=0):
         self._type = _type
-        self.data = PIECES[_type]
+        # copies data
+        self.data = map(lambda row: row[:], PIECES[_type])
         self.size = len(self.data)
 
         self.right_rotations = 0
-        for i in range(right_rotations):
-            self.rotate_right()
-        for i in range(left_rotations):
-            self.rotate_left()
+        num_rotations = (right_rotations - left_rotations) % 4
+        if num_rotations < 3:
+            for i in range(num_rotations):
+                self.rotate_right()
+        else:
+            for i in range(4 - num_rotations):
+                self.rotate_left()
 
+    # does an in-place rotation
     def rotate_right(self):
         self.right_rotations = (self.right_rotations + 1) % 4
-        row = [0] * self.size
-        result = [row[:] for i in range(self.size)]
-        for y in range(self.size):
-            for x in range(self.size):
-                result[x][self.size - y - 1] = self.data[y][x]
-        self.data = result
+        for y1 in range(self.size / 2):
+            for x1 in range((self.size + 1) / 2):
+                y2 = self.size - y1 - 1
+                x2 = self.size - x1 - 1
 
+                tmp = self.data[y1][x1]
+                self.data[y1][x1] = self.data[x2][y1]
+                self.data[x2][y1] = self.data[y2][x2]
+                self.data[y2][x2] = self.data[x1][y2]
+                self.data[x1][y2] = tmp
+
+    # does an in-place rotation
     def rotate_left(self):
         self.right_rotations = (self.right_rotations - 1) % 4
-        row = [0] * self.size
-        result = [row[:] for i in range(self.size)]
-        for y in range(self.size):
-            for x in range(self.size):
-                result[self.size - x - 1][y] = self.data[y][x]
-        self.data = result
+        for y1 in range(self.size / 2):
+            for x1 in range((self.size + 1) / 2):
+                y2 = self.size - y1 - 1
+                x2 = self.size - x1 - 1
+
+                tmp = self.data[y1][x1]
+                self.data[y1][x1] = self.data[x1][y2]
+                self.data[x1][y2] = self.data[y2][x2]
+                self.data[y2][x2] = self.data[x2][y1]
+                self.data[x2][y1] = tmp
 
     def get_locations(self):
         blocks = []

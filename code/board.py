@@ -46,10 +46,11 @@ class Board(object):
 
             blocks = piece.get_locations()
 
-            p_minx = min(map(lambda x: x[0], blocks))
-            p_maxx = max(map(lambda x: x[0], blocks))
-            p_miny = min(map(lambda x: x[1], blocks))
-            p_maxy = max(map(lambda x: x[1], blocks))
+            x_blocks, y_blocks = zip(*blocks)
+            p_minx = min(x_blocks)
+            p_maxx = max(x_blocks)
+            p_miny = min(y_blocks)
+            p_maxy = max(y_blocks)
 
             lowest_blocks = filter(lambda x: x[1] == p_miny, blocks)
 
@@ -58,16 +59,20 @@ class Board(object):
                 for x in range(-p_minx, self.width - p_maxx):
                     shift_blocks = map(lambda b: (x + b[0], y + b[1]), blocks)
 
-                    conflict_space = map(lambda x: self.data[x[1]][x[0]] > 1, shift_blocks)
-                    conflict_space = reduce(lambda x, y: x or y, conflict_space)
-
-                    if conflict_space:
+                    # finds conflicts of space
+                    conflict = False
+                    for x_block, y_block in shift_blocks:
+                        if self.data[y_block][x_block] > 1:
+                            conflict = True
+                            break
+                    if conflict:
                         continue
 
                     floor_exists = False
                     for x_block, y_block in shift_blocks:
                         if y_block == self.height - 1 or self.data[y_block + 1][x_block] > 1:
                             floor_exists = True
+                            break
 
                     if not floor_exists:
                         continue
@@ -86,7 +91,7 @@ class Board(object):
 
         for x_pos, y_pos in shift_blocks:
             if self.data[y_pos][x_pos] > 1:
-                print 'Error'
+                print 'Error placing piece'
                 return
             self.data[y_pos][x_pos] = 2
 
@@ -97,7 +102,7 @@ class Board(object):
 
         for x_pos, y_pos in shift_blocks:
             if self.data[y_pos][x_pos] < 2:
-                print 'Error'
+                print 'Error removing piece'
                 return
             self.data[y_pos][x_pos] = 0
 
@@ -126,7 +131,9 @@ class Board(object):
 
         return path
 
-    def get_feature_vector(self):
+    # TODO: refactor this
+    def get_feature_vector(self, combo_counter=0):
+
         feature_vector = {}
         row_data = map(lambda row: map(lambda x: 1 if x > 1 else 0, row), self.data)
         col_data = zip(*row_data)
@@ -143,7 +150,13 @@ class Board(object):
         feature_vector['sum_highest'] = sum(highest_cols)
 
         solid_rows = map(lambda row: reduce(lambda x, y: x and y, row), row_data)
-        feature_vector['solid_lines'] = sum(solid_rows)
+        lines_cleared = sum(solid_rows)
+        points_scored = 0
+        if lines_cleared == 4:
+            points_scored = combo_counter + 8
+        elif lines_cleared:
+            points_scored = combo_counter + lines_cleared
+        feature_vector['points_scored'] = points_scored
 
         height_diffs = []
         for i in range(len(highest_cols) - 1):
@@ -151,20 +164,46 @@ class Board(object):
         feature_vector['sum_height_diffs'] = sum(height_diffs)
 
         spaces = map(lambda row: map(lambda x: 1 if not x else 0, row), row_data)
+        empty_rows = map(lambda row: 0 if reduce(lambda x, y: x or y, row) else 1, row_data)
+
+        highest_empty_row = 0
+        for empty_row in empty_rows:
+            if empty_row:
+                highest_empty_row += 1
+            else:
+                break
+
+        spaces = map(lambda row: map(lambda x: 1 if not x else 0, row), row_data)
+        empty_rows = map(lambda row: 0 if reduce(lambda x, y: x or y, row) else 1, row_data)
+
+        start_row = 0
+        for empty_row in empty_rows:
+            if empty_row:
+                start_row += 1
+            else:
+                break
+
         spaces = matrix_to_list(spaces)
+        fringe = set(filter(lambda x: x[1] == start_row, spaces))
+        closed = set()
 
-        not_holes = set(filter(lambda x: x[1] == 0, spaces))
-
-        fringe = not_holes.copy()
         while len(fringe):
             x, y = fringe.pop()
+            closed.add((x, y))
             neighbors = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
-            for neighbor in neighbors:
-                if neighbor in spaces and neighbor not in not_holes:
-                    not_holes.add(neighbor)
-                    fringe.add(neighbor)
 
-        feature_vector['hole_num'] = len(set(spaces) - not_holes)
+            for neighbor in neighbors:
+                # to catch out of range errors
+                try:
+                    if neighbor not in closed and self.data[neighbor[1]][neighbor[0]] < 2:
+                        x, y = neighbor
+                        if x >= 0 and y >= 0:
+                            fringe.add(neighbor)
+                except:
+                    pass
+
+        total_spaces = len(set(filter(lambda x: x[1] >= start_row, spaces)))
+        feature_vector['hole_num'] = total_spaces - len(closed)
 
         return feature_vector
 
@@ -261,7 +300,7 @@ def test4():
     import time
     t0 = time.time()
     base=Board(data='0,0,0,1,1,1,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,2,2,0,0,0,0,0;0,0,0,0,2,2,0,0,0,0;0,0,0,2,2,0,0,0,0,0;0,0,0,0,2,2,0,0,0,0;0,0,0,0,2,2,0,0,0,0;0,0,0,2,2,2,0,0,0,0;0,0,0,2,2,2,0,0,0,0')
-    for i in range(10):
+    for i in range(1000):
         base.get_feature_vector()
     print time.time() - t0
 
@@ -272,7 +311,6 @@ def test5():
     print result
     #self.assertEquals(result, {'solid_lines': 0, 'sum_highest': 10, 'sum_height_diffs': 15, 'hole_num': 0})
 
-#test0()
-
+test4()
 
 
